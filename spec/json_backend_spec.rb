@@ -37,19 +37,22 @@ class Hiera
                 end
 
                 it "should retain the data types found in data files" do
-                    Backend.expects(:datasources).yields("one").times(3)
-                    Backend.expects(:datafile).with(:json, {}, "one", "json").returns("/nonexisting/one.json").times(3)
+                    Backend.expects(:datasources).yields("one").times(4)
+                    Backend.expects(:datafile).with(:json, {}, "one", "json").returns("/nonexisting/one.json").times(4)
                     File.expects(:read).with("/nonexisting/one.json").returns('{"stringval":"string",
                                                                                 "boolval":true,
-                                                                                "numericval":1}').times(3)
+                                                                                "numericval":1,
+                                                                                "hash": {"key": "value"}}').times(4)
 
                     Backend.stubs(:parse_answer).with('string', {}).returns('string')
                     Backend.stubs(:parse_answer).with(true, {}).returns(true)
                     Backend.stubs(:parse_answer).with(1, {}).returns(1)
+                    Backend.stubs(:parse_answer).with({"key"=>"value"}, {}).returns({"key"=>"value"})
 
                     @backend.lookup("stringval", {}, nil, :priority).should == "string"
                     @backend.lookup("boolval", {}, nil, :priority).should == true
                     @backend.lookup("numericval", {}, nil, :priority).should == 1
+                    @backend.lookup("hash", {}, nil, :priority).should == {"key"=>"value"}
                 end
 
                 it "should pick data earliest source that has it for priority searches" do

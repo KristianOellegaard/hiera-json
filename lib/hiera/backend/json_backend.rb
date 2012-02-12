@@ -19,6 +19,7 @@ class Hiera
 
                     data = JSON.parse(File.read(jsonfile))
 
+                    next if ! data
                     next if data.empty?
                     next unless data.include?(key)
 
@@ -27,12 +28,22 @@ class Hiera
                     # the array
                     #
                     # for priority searches we break after the first found data item
+                    new_answer = Backend.parse_answer(data[key], scope)
+                    # for array resolution we just append to the array whatever
+                    # we find, we then goes onto the next file and keep adding to
+                    # the array
+                    #
+                    # for priority searches we break after the first found data item
                     case resolution_type
                     when :array
-                        answer << Backend.parse_answer(data[key], scope)
+                      raise Exception, "Hiera type mismatch: expected Array and got #{new_answer.class}" unless new_answer.kind_of? Array or new_answer.kind_of? String
+                      answer << new_answer
+                    when :hash
+                      raise Exception, "Hiera type mismatch: expected Hash and got #{new_answer.class}" unless new_answer.kind_of? Hash
+                      answer = new_answer.merge answer
                     else
-                        answer = Backend.parse_answer(data[key], scope)
-                        break
+                      answer = new_answer
+                      break
                     end
                 end
 
